@@ -12,6 +12,7 @@ const ResponsiveOverrides = () => <style>{`.app-shell{max-width:100vw;overflow:h
 const GridPlacement = () => <style>{`.sidebar{grid-column:1;grid-row:2}.main-content{grid-column:2;grid-row:2}@media(max-width:820px){.sidebar,.main-content{grid-column:auto;grid-row:auto}}`}</style>;
 
 export default function App() {
+  const buildStamp = '2026-08-14-pages-refresh';
   const [mode, setMode] = useState<Mode>('model');
   const [selectedModel, setSelectedModel] = useState(modelRecords[0].id);
   const [selectedOrder, setSelectedOrder] = useState(orderRecords[0].id);
@@ -23,7 +24,7 @@ export default function App() {
   const activeOrder = orderRecords.find((record) => record.id === selectedOrder) ?? orderRecords[0];
   const filteredModels = models.filter((record) => `${record.model} ${record.version}`.toLowerCase().includes(query.toLowerCase()));
   const filteredOrders = orderRecords.filter((record) => `${record.id} ${record.customer} ${record.model}`.toLowerCase().includes(query.toLowerCase()));
-  return <div className="app-shell" style={{ gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)` }}><ResponsiveOverrides /><GridPlacement />
+  return <div className="app-shell" data-build={buildStamp} style={{ gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)` }}><ResponsiveOverrides /><GridPlacement />
     <header className="topbar"><div className="brand-mark">⚓</div><h1>船用低温阀门成本核算工作台</h1><div className="header-controls"><select aria-label="筛选字段"><option>产品型号</option><option>订单编号</option></select><label className="search"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={mode === 'model' ? '请输入产品型号 / 版本' : '请输入订单号 / 客户'} />⌕</label><select aria-label="版本"><option>版本：全部</option></select><select aria-label="核算期间"><option>核算期间：2026-08</option></select><CsvImport onImport={(records) => { setImported(records as ImportedModel[]); setSelectedModel((records as ImportedModel[])[0]?.id ?? selectedModel); }} /></div></header>
     <aside className="sidebar"><div className="mode-tabs"><button className={mode === 'model' ? 'selected' : ''} onClick={() => setMode('model')}>型号成本</button><button className={mode === 'order' ? 'selected' : ''} onClick={() => setMode('order')}>订单执行</button></div>{mode === 'model' ? <ModelSidebar records={filteredModels} selected={activeModel.id} onSelect={setSelectedModel} /> : <OrderSidebar records={filteredOrders} selected={activeOrder.id} onSelect={setSelectedOrder} />}</aside><div className="sidebar-resizer" role="separator" aria-label="调整左侧栏目宽度" onPointerDown={(event) => { const start = event.clientX; const width = sidebarWidth; const move = (pointer: PointerEvent) => setSidebarWidth(Math.max(240, Math.min(460, width + pointer.clientX - start))); const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); }} />
     <main className="main-content">{mode === 'model' ? <ModelView model={activeModel} /> : <OrderView order={activeOrder} />}</main>
