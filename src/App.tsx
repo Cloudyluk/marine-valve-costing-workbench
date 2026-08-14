@@ -8,21 +8,23 @@ import type { ImportedModel } from './domain/csv';
 
 type Mode = 'model' | 'order';
 const Status = ({ children }: { children: string }) => <span className={children === '已审核' || children === '已完成' ? 'status approved' : 'status active'}>{children}</span>;
+const ResponsiveOverrides = () => <style>{`.sidebar-resizer{grid-row:2;grid-column:1;justify-self:end;width:8px;cursor:col-resize;z-index:4}.sidebar-resizer:hover{background:#0969da33}.main-content{min-width:0;overflow-x:hidden}@media(max-width:1450px){.detail-grid,.order-layout{grid-template-columns:1fr}}@media(max-width:760px){.app-shell{display:block!important}.sidebar-resizer{display:none}.main-content{overflow-x:auto}}`}</style>;
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('model');
   const [selectedModel, setSelectedModel] = useState(modelRecords[0].id);
   const [selectedOrder, setSelectedOrder] = useState(orderRecords[0].id);
   const [query, setQuery] = useState('');
+  const [sidebarWidth, setSidebarWidth] = useState(340);
   const [imported, setImported] = useState<ImportedModel[]>([]);
   const models = useMemo(() => [...modelRecords, ...imported.map((record) => ({ ...record, valve: 'CSV 导入版本', updated: '本次导入', materialLines: modelRecords[0].materialLines, laborLines: modelRecords[0].laborLines, outsourceLines: modelRecords[0].outsourceLines, overheadLines: modelRecords[0].overheadLines } as ModelRecord))], [imported]);
   const activeModel = models.find((record) => record.id === selectedModel) ?? models[0];
   const activeOrder = orderRecords.find((record) => record.id === selectedOrder) ?? orderRecords[0];
   const filteredModels = models.filter((record) => `${record.model} ${record.version}`.toLowerCase().includes(query.toLowerCase()));
   const filteredOrders = orderRecords.filter((record) => `${record.id} ${record.customer} ${record.model}`.toLowerCase().includes(query.toLowerCase()));
-  return <div className="app-shell">
+  return <div className="app-shell" style={{ gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)` }}><ResponsiveOverrides />
     <header className="topbar"><div className="brand-mark">⚓</div><h1>船用低温阀门成本核算工作台</h1><div className="header-controls"><select aria-label="筛选字段"><option>产品型号</option><option>订单编号</option></select><label className="search"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={mode === 'model' ? '请输入产品型号 / 版本' : '请输入订单号 / 客户'} />⌕</label><select aria-label="版本"><option>版本：全部</option></select><select aria-label="核算期间"><option>核算期间：2026-08</option></select><CsvImport onImport={(records) => { setImported(records as ImportedModel[]); setSelectedModel((records as ImportedModel[])[0]?.id ?? selectedModel); }} /></div></header>
-    <aside className="sidebar"><div className="mode-tabs"><button className={mode === 'model' ? 'selected' : ''} onClick={() => setMode('model')}>型号成本</button><button className={mode === 'order' ? 'selected' : ''} onClick={() => setMode('order')}>订单执行</button></div>{mode === 'model' ? <ModelSidebar records={filteredModels} selected={activeModel.id} onSelect={setSelectedModel} /> : <OrderSidebar records={filteredOrders} selected={activeOrder.id} onSelect={setSelectedOrder} />}</aside>
+    <aside className="sidebar"><div className="mode-tabs"><button className={mode === 'model' ? 'selected' : ''} onClick={() => setMode('model')}>型号成本</button><button className={mode === 'order' ? 'selected' : ''} onClick={() => setMode('order')}>订单执行</button></div>{mode === 'model' ? <ModelSidebar records={filteredModels} selected={activeModel.id} onSelect={setSelectedModel} /> : <OrderSidebar records={filteredOrders} selected={activeOrder.id} onSelect={setSelectedOrder} />}</aside><div className="sidebar-resizer" role="separator" aria-label="调整左侧栏目宽度" onPointerDown={(event) => { const start = event.clientX; const width = sidebarWidth; const move = (pointer: PointerEvent) => setSidebarWidth(Math.max(240, Math.min(460, width + pointer.clientX - start))); const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); }} />
     <main className="main-content">{mode === 'model' ? <ModelView model={activeModel} /> : <OrderView order={activeOrder} />}</main>
   </div>;
 }
